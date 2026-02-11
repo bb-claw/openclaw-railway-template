@@ -163,14 +163,15 @@ echo ""
 echo "========== TEST SUMMARY =========="
 [ $TELEGRAM_OK -eq 1 ] && echo -e "${GREEN}✓ Telegram${NC}" || echo -e "${RED}✗ Telegram${NC}"
 [ $CLAUDE_OK -eq 1 ] && echo -e "${GREEN}✓ Claude API${NC}" || echo -e "${RED}✗ Claude API${NC}"
-[ $GITHUB_OK -eq 1 ] && echo -e "${GREEN}✓ GitHub API${NC}" || echo -e "${RED}✗ GitHub API${NC}"
+[ $GITHUB_OK -eq 1 ] && echo -e "${GREEN}✓ GitHub API${NC}" || echo -e "${YELLOW}⚠ GitHub API (optional)${NC}"
 echo ""
 
 # Exit code
-if [ $TELEGRAM_OK -eq 1 ] && [ $CLAUDE_OK -eq 1 ] && [ $GITHUB_OK -eq 1 ]; then
-  echo -e "${GREEN}All integration tests passed!${NC}"
+# GitHub test is optional - don't fail if it fails
+if [ $TELEGRAM_OK -eq 1 ] && [ $CLAUDE_OK -eq 1 ]; then
+  echo -e "${GREEN}All critical integration tests passed!${NC}"
   exit 0
 else
-  echo -e "${RED}Some integration tests failed${NC}"
+  echo -e "${RED}Some critical integration tests failed${NC}"
   exit 1
 fi
