@@ -92,3 +92,50 @@ jobs:
           fi
 
           echo "✅ Redeploy triggered — new deployment status: ${STATUS}"
+
+      # Health check for primary instance before triggering buddy
+      - name: Health Check (Primary)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.RAILWAY_API_TOKEN != ''
+        env:
+          HEALTH_CHECK_URL: ${{ secrets.RAILWAY_PRIMARY_URL }}
+        run: |
+          if [ -z "$HEALTH_CHECK_URL" ] || [ "$HEALTH_CHECK_URL" = "${{ secrets.RAILWAY_PRIMARY_URL }}" ]; then
+            echo "⚠️ RAILWAY_PRIMARY_URL not configured, skipping health check"
+            exit 0
+          fi
+
+          echo "⏳ Waiting for primary instance to be healthy..."
+          HEALTH_URL="${HEALTH_CHECK_URL}/setup/healthz"
+          
+          for i in {1..60}; do
+            if curl -sf "$HEALTH_URL" > /dev/null 2>&1; then
+              echo "✅ Primary instance is healthy"
+              exit 0
+            fi
+            echo "Attempt $i/60..."
+            sleep 10
+          done
+          
+          echo "❌ Primary health check failed after 10 minutes"
+          exit 1
+
+      # Trigger buddy instance deployment after successful primary redeploy and health check
+      - name: Trigger Buddy Deployment
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.RAILWAY_API_TOKEN != '' && success()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('🤝 Triggering buddy instance deployment workflow...');
+            
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy-buddy.yml',
+              ref: 'main',
+              inputs: {
+                buddy_duration_hours: '2'
+              }
+            });
+            
+            console.log('✅ Buddy deployment workflow triggered');
