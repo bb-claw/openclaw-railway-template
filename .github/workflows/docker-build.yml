@@ -105,3 +105,28 @@ jobs:
       health_check_url: ${{ secrets.RAILWAY_PRIMARY_URL }}
       initial_wait_seconds: 60
       max_attempts: 60
+
+  # Trigger buddy instance deployment after successful health check
+  trigger-buddy:
+    needs: health-check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Buddy Deployment
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('🤝 Triggering buddy instance deployment workflow...');
+            
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy-buddy.yml',
+              ref: 'main',
+              inputs: {
+                buddy_duration_hours: '2'
+              }
+            });
+            
+            console.log('✅ Buddy deployment workflow triggered');
