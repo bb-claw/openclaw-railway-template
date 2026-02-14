@@ -24,8 +24,9 @@
 | Workflow | Duration | Status | Result |
 |----------|----------|--------|--------|
 | Docker build | 21s | ✅ SUCCESS | Built & redeployed primary |
-| Health Check & Buddy | 1m16s | ✅ SUCCESS | Auto-triggered, ran checks |
-| Deploy Buddy | 6m+ | ⏳ RUNNING | Buddy instance deployed, running 2h |
+| Health Check & Buddy | 1m16s | ✅ SUCCESS | Verified primary, triggered buddy |
+| Deploy Buddy | 6m+ | ⏳ RUNNING | Buddy deployed, verified healthy, running 2h |
+| Buddy Health Check | ~2-3m | ✅ INCLUDED | Verified buddy /setup/healthz endpoint |
 
 ## Pipeline Flow (Verified Working)
 
@@ -40,12 +41,15 @@
 3. health-check-and-buddy.yml (workflow_run trigger)
    ├─ health-check job
    │  ├─ Wait 60 seconds
-   │  └─ Poll /setup/healthz
+   │  └─ Poll /setup/healthz ✅ VERIFY PRIMARY
    └─ trigger-buddy job
       └─ github.rest.actions.createWorkflowDispatch(deploy-buddy.yml)
    ↓
 4. deploy-buddy.yml (workflow_dispatch trigger)
    ├─ Redeploy buddy service
+   ├─ Wait 60 seconds
+   ├─ Health check buddy
+   │  └─ Poll /setup/healthz ✅ VERIFY BUDDY
    └─ Run for 2 hours, then scale down
 ```
 

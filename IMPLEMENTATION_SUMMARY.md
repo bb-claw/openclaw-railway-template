@@ -68,14 +68,16 @@ docker-build-feature      docker-build
                         ✅ DONE
                         ├─ health-check job
                         │  (wait 60s + polling)
-                        │  ✅ SUCCESS
+                        │  ✅ VERIFY PRIMARY
                         └─ trigger-buddy job
                            (dispatch deploy-buddy)
                            ✅ SUCCESS
                                 ↓
                         deploy-buddy.yml
-                        (run 2 hours)
-                        ✅ IN PROGRESS
+                        ├─ Redeploy buddy
+                        ├─ Wait 60s
+                        ├─ health-check buddy ✅ VERIFY BUDDY (NEW)
+                        └─ Run 2 hours
 ```
 
 ---

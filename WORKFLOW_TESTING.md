@@ -20,15 +20,15 @@ This document explains how to test and verify the deployment workflows.
 - No Railway redeploy happens
 
 ### Scenario 2: Main Branch Push (Full Pipeline)
-**Goal:** Verify complete pipeline: build → redeploy → health-check → buddy
+**Goal:** Verify complete pipeline: build → redeploy → health-check → buddy → buddy-health-check
 
 **Steps:**
 1. Push to `main` branch
 2. Watch GitHub Actions → All workflows tab
 3. Expected sequence:
    - `Docker build` (main) - Build & redeploy primary
-   - `Health Check & Buddy Deployment` - Verify health & trigger buddy
-   - `Deploy Buddy` - Run buddy for 2 hours
+   - `Health Check & Buddy Deployment` - Verify primary health & trigger buddy
+   - `Deploy Buddy` - Redeploy buddy, verify health, run for 2 hours
 
 **Verification:**
 ```
@@ -41,21 +41,24 @@ Docker build starts (~1-2 min)
     ↓
 Docker build completes
     ↓
-docker-build.yml triggers health-check-and-buddy.yml dispatch
-    ↓
-health-check-and-buddy.yml starts
+health-check-and-buddy.yml auto-triggers
     ├─ health-check job: Wait 60s → Poll /setup/healthz
     └─ trigger-buddy job: Dispatch deploy-buddy.yml
     ↓
 deploy-buddy.yml starts
-    └─ Redeploy buddy, run 2 hours, scale down
+    ├─ Redeploy buddy service
+    ├─ Wait 60s for buddy to stabilize
+    ├─ Health check buddy: Poll /setup/healthz ✅ (NEW)
+    ├─ Run for 2 hours
+    └─ Scale down
 ```
 
 **Expected Duration:**
 - Docker build: ~1-2 minutes
-- Health check: ~2-3 minutes (60s wait + polling)
-- Buddy deployment: ~1-2 minutes
-- **Total:** ~5-10 minutes
+- Health check (primary): ~2-3 minutes (60s wait + polling)
+- Buddy deployment start: ~1 minute
+- Buddy health check: ~2-3 minutes (60s wait + polling)
+- **Total:** ~7-12 minutes
 
 ### Scenario 3: Workflow Dispatch (Manual Buddy Trigger)
 **Goal:** Manually trigger buddy deployment without health-check
@@ -104,7 +107,12 @@ deploy-buddy.yml starts
 ```
 🤝 Deploying buddy instance...
 ✅ Buddy redeploy triggered — new deployment status: RUNNING
+⏳ Waiting 60 seconds for buddy instance to stabilize...
+🔍 Checking buddy health endpoint: https://buddy-url/setup/healthz
+⏳ Attempt 1/60 - buddy instance not ready yet...
+✅ Buddy instance is healthy (attempt X/60)
 ⏱️ Running buddy for 2 hour(s)...
+✅ Buddy session complete
 ```
 
 ## Troubleshooting
@@ -163,6 +171,8 @@ Monitor these metrics:
 - Triggers automatically after health check
 - Shows "🤝 Triggering buddy instance deployment"
 - Deploy buddy workflow starts and runs
+- Buddy instance health verified (shows "✅ Buddy instance is healthy")
+- Buddy runs for configured duration (default 2 hours)
 
 ## CI/CD Status
 
