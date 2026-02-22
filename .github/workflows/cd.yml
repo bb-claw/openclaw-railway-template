@@ -45,8 +45,6 @@ jobs:
       railway-service-id-prod:  ${{ vars.RAILWAY_SERVICE_ID_PROD }}
       railway-project-id-dev:   ${{ vars.RAILWAY_PROJECT_ID_DEV }}
       railway-project-id-prod:  ${{ vars.RAILWAY_PROJECT_ID_PROD }}
-      railway-environment-id-dev:   ${{ vars.RAILWAY_ENVIRONMENT_ID_DEV }}
-      railway-environment-id-prod:  ${{ vars.RAILWAY_ENVIRONMENT_ID_PROD }}
       package-manager:           pnpm
       # ── Optional overrides (uncomment to customise) ──────────────────────
       # dockerfile:              "./Dockerfile"
